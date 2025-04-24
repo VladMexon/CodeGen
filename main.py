@@ -31,4 +31,41 @@ def get_code(responce):
 
     return [block.strip() for block in code_blocks]
 
-print(get_code(generate_response(generate_prompt()))[0])
+def script_save(code):
+    with open("script.py", "w") as file:
+        file.write(code)
+
+def docker_run():
+    import subprocess
+    subprocess.run(["docker", "build", "-t", "my-python-script", "."])
+    result = subprocess.run(["docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
+
+    return result.stdout, result.stderr
+
+def compare_output(script_output, expected_output):
+    return script_output.strip() == expected_output.strip()
+
+def main():
+    prompt = generate_prompt()
+    response = generate_response(prompt)
+    code_blocks = get_code(response)
+
+    if code_blocks:
+        script_code = code_blocks[0]
+        script_save(script_code)
+
+        script_output, error_output = docker_run()
+
+        if error_output:
+            print(f"Error: {error_output}")
+        else:
+            expected_output = read_file(OUTPUT_DATA_PATH)
+            if compare_output(script_output, expected_output):
+                print("Output matches the expected output.")
+            else:
+                print("Output does not match the expected output.")
+    else:
+        print("No code blocks found in the response.")
+
+if __name__ == "__main__":
+    main()
