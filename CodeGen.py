@@ -38,7 +38,7 @@ def read_file(file_path):
 def generate_prompt():
     input_data = read_file(INPUT_DATA_PATH)
     output_data = read_file(OUTPUT_DATA_PATH)
-    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like \n```requirements.txt\n...```\n input data should reads from file data.html.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
+    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like \n```requirements.txt\n...```\n and input data should be readed data.html.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
     return prompt
 
 def generate_correction_prompt(script_code, error_message, actual_output):
