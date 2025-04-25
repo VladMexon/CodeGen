@@ -1,6 +1,6 @@
 #Заменить на что угодно
 from google import genai
-client = genai.Client(api_key="AIzaSyA9M9pYa84TV6kbTn8LFVIdrLB7qBdlYOY")
+client = genai.Client(api_key="")
 
 def generate_response(prompt):
     response = client.models.generate_content(
@@ -10,6 +10,7 @@ def generate_response(prompt):
 
 # Сама программа
 import re
+import subprocess
 
 INPUT_DATA_PATH = 'data.html'
 OUTPUT_DATA_PATH = 'data.json'
@@ -22,21 +23,38 @@ def read_file(file_path):
 def generate_prompt():
     input_data = read_file(INPUT_DATA_PATH)
     output_data = read_file(OUTPUT_DATA_PATH)
-    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
+    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like ```requirements.txt\n...```.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
+    return prompt
+
+def generate_correction_prompt(script_code, error_message, actual_output):
+    input_data = read_file(INPUT_DATA_PATH)
+    output_data = read_file(OUTPUT_DATA_PATH)
+    prompt = f"Correct the following python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like ```requirements.txt\n...```, Actual_Output should should be consistent with Output_Data.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```\nError: {error_message}\nActual_Output: {actual_output}\nCode: ```python\n{script_code}```"
     return prompt
 
 def get_code(responce):
     pattern = r"(?s)(?:```python\s*\n?|```\s*\n?)(.*?)\n?```"
+    
     code_blocks = re.findall(pattern, responce)
 
     return [block.strip() for block in code_blocks]
+
+def get_requirements(responce):
+    pattern = r"(?s)```requirements\.txt\s*\n(.*?)\n```"
+    
+    requirements_blocks = re.findall(pattern, responce)
+
+    return [block.strip() for block in requirements_blocks]
 
 def script_save(code):
     with open("script.py", "w") as file:
         file.write(code)
 
+def requirements_save(requirements):
+    with open("requirements.txt", "w") as file:
+        file.write(requirements)
+
 def docker_run():
-    import subprocess
     subprocess.run(["docker", "build", "-t", "my-python-script", "."])
     result = subprocess.run(["docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
 
@@ -49,23 +67,34 @@ def main():
     prompt = generate_prompt()
     response = generate_response(prompt)
     code_blocks = get_code(response)
-
-    if code_blocks:
-        script_code = code_blocks[0]
-        script_save(script_code)
-
-        script_output, error_output = docker_run()
-
-        if error_output:
-            print(f"Error: {error_output}")
+    requirements_blocks = get_requirements(response)
+    while True:
+        if requirements_blocks:
+            requirements_save(requirements_blocks[0])
         else:
-            expected_output = read_file(OUTPUT_DATA_PATH)
-            if compare_output(script_output, expected_output):
-                print("Output matches the expected output.")
+            print("No requirements found in the response.")
+
+        if code_blocks:
+            script_code = code_blocks[0]
+            script_save(script_code)
+
+            script_output, error_output = docker_run()
+
+            if error_output:
+                print(f"Error: {error_output}")
             else:
-                print("Output does not match the expected output.")
-    else:
-        print("No code blocks found in the response.")
+                expected_output = read_file(OUTPUT_DATA_PATH)
+                if compare_output(script_output, expected_output):
+                    print("Output matches the expected output.")
+                    break
+                else:
+                    print("Output does not match the expected output.")
+        else:
+            print("No code blocks found in the response.")
+        prompt = generate_correction_prompt(script_code, error_output, script_output)
+        response = generate_response(prompt)
+        code_blocks = get_code(response)
+        requirements_blocks = get_requirements(response)
 
 if __name__ == "__main__":
     main()
