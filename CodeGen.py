@@ -84,6 +84,9 @@ def commit_changes():
     #subprocess.run(["git", "push"])
 
 def start(commit=False):
+    script_code = ''
+    error_output = ''
+    script_output = ''
     prompt = generate_prompt()
     response = generate_response(prompt)
     code_blocks = get_code(response)
