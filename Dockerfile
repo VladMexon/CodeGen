@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 
 COPY script.py .
+COPY data.html .
 
 
 CMD ["python", "-u", "script.py"]

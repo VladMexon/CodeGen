@@ -1,6 +1,13 @@
 #Заменить на что угодно
 from google import genai
-client = genai.Client(api_key="")
+
+API_KEY = "" #Требуется API ключ, который можно получить на сайте https://aistudio.google.com/apikey
+
+def set_api_key(api_key):
+    global API_KEY
+    API_KEY = api_key
+
+client = genai.Client(api_key=API_KEY)
 
 def generate_response(prompt):
     response = client.models.generate_content(
@@ -15,6 +22,14 @@ import subprocess
 INPUT_DATA_PATH = 'data.html'
 OUTPUT_DATA_PATH = 'data.json'
 
+def set_input_data_path(path):
+    global INPUT_DATA_PATH
+    INPUT_DATA_PATH = path
+
+def set_output_data_path(path):
+    global OUTPUT_DATA_PATH
+    OUTPUT_DATA_PATH = path
+
 def read_file(file_path):
     with open(file_path, "r") as file:
         content = file.read()
@@ -23,7 +38,7 @@ def read_file(file_path):
 def generate_prompt():
     input_data = read_file(INPUT_DATA_PATH)
     output_data = read_file(OUTPUT_DATA_PATH)
-    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like ```requirements.txt\n...```.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
+    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like \n```requirements.txt\n...```\n input data should reads from file data.html.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
     return prompt
 
 def generate_correction_prompt(script_code, error_message, actual_output):
@@ -55,15 +70,20 @@ def requirements_save(requirements):
         file.write(requirements)
 
 def docker_run():
-    subprocess.run(["docker", "build", "-t", "my-python-script", "."])
-    result = subprocess.run(["docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
+    subprocess.run(["sudo", "docker", "build", "-t", "my-python-script", "."])
+    result = subprocess.run(["sudo", "docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
 
     return result.stdout, result.stderr
 
 def compare_output(script_output, expected_output):
     return script_output.strip() == expected_output.strip()
 
-def main():
+def commit_changes():
+    subprocess.run(["git", "add", "."])
+    subprocess.run(["git", "commit", "-m", "#SCRIPT\nUpdate script and requirements"])
+    #subprocess.run(["git", "push"])
+
+def start(commit=False):
     prompt = generate_prompt()
     response = generate_response(prompt)
     code_blocks = get_code(response)
@@ -77,6 +97,8 @@ def main():
         if code_blocks:
             script_code = code_blocks[0]
             script_save(script_code)
+            if commit:
+                commit_changes()
 
             script_output, error_output = docker_run()
 
@@ -86,15 +108,16 @@ def main():
                 expected_output = read_file(OUTPUT_DATA_PATH)
                 if compare_output(script_output, expected_output):
                     print("Output matches the expected output.")
-                    break
+                    break # Работает до входа в этот блок
                 else:
                     print("Output does not match the expected output.")
         else:
             print("No code blocks found in the response.")
+        
         prompt = generate_correction_prompt(script_code, error_output, script_output)
         response = generate_response(prompt)
         code_blocks = get_code(response)
         requirements_blocks = get_requirements(response)
 
 if __name__ == "__main__":
-    main()
+    start()
