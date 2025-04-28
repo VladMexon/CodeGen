@@ -135,5 +135,5 @@ if __name__ == "__main__":
     MODEL = args.model
     INPUT_DATA_PATH = args.input
     OUTPUT_DATA_PATH = args.output
-    start()
+    start() #start(commit=True) # Для коммита изменений в git
     
