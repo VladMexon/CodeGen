@@ -2,8 +2,14 @@
 from ollama import chat
 from ollama import ChatResponse
 
-def generate_response(prompt):
-    response: ChatResponse = chat(model='llama3.2', messages=[
+MODEL = "yandex/YandexGPT-5-Lite-8B-instruct-GGUF"
+
+def set_model(model_name):
+    global MODEL
+    MODEL = model_name
+
+def generate_response(prompt, model_name=MODEL):
+    response: ChatResponse = chat(model=model_name, messages=[
         {
             'role': 'user',
             'content': prompt,
@@ -14,9 +20,11 @@ def generate_response(prompt):
 # Сама программа
 import re
 import subprocess
+import argparse
 
 INPUT_DATA_PATH = 'data.html'
 OUTPUT_DATA_PATH = 'data.json'
+
 
 def set_input_data_path(path):
     global INPUT_DATA_PATH
@@ -34,7 +42,7 @@ def read_file(file_path):
 def generate_prompt():
     input_data = read_file(INPUT_DATA_PATH)
     output_data = read_file(OUTPUT_DATA_PATH)
-    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like \n```requirements.txt\n...```\n and input data should be readed data.html.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
+    prompt = f"Generate python code that takes Input_Data as input and returns Output_Data to console, also generate requirements.txt like \n```requirements.txt\n...```\n and input data should be readed from file data.html.\nInput_Data: ```{input_data}```\nOutput_Data: ```{output_data}```"
     return prompt
 
 def generate_correction_prompt(script_code, error_message, actual_output):
@@ -119,4 +127,10 @@ def start(commit=False):
         requirements_blocks = get_requirements(response)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="CodeGen script")
+    parser.add_argument("--model", type=str, default="yandex/YandexGPT-5-Lite-8B-instruct-GGUF", help="Name of the ollama model to use")
+    parser.add_argument("--input", type=str, default=INPUT_DATA_PATH, help="Path to the input data file")
+    parser.add_argument("--output", type=str, default=OUTPUT_DATA_PATH, help="Path to the output data file")
+    args = parser.parse_args()
+    MODEL = args.model
     start()
