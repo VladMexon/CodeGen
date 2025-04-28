@@ -1,19 +1,15 @@
 #Заменить на что угодно
-from google import genai
-
-API_KEY = "" #Требуется API ключ, который можно получить на сайте https://aistudio.google.com/apikey
-
-def set_api_key(api_key):
-    global API_KEY
-    API_KEY = api_key
-
-client = genai.Client(api_key=API_KEY)
+from ollama import chat
+from ollama import ChatResponse
 
 def generate_response(prompt):
-    response = client.models.generate_content(
-        model="gemini-2.0-flash", contents=prompt
-    )
-    return response.text
+    response: ChatResponse = chat(model='llama3.2', messages=[
+        {
+            'role': 'user',
+            'content': prompt,
+        },
+    ])
+    return response.message.content
 
 # Сама программа
 import re
