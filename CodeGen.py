@@ -8,8 +8,8 @@ def set_model(model_name):
     global MODEL
     MODEL = model_name
 
-def generate_response(prompt, model_name=MODEL):
-    response: ChatResponse = chat(model=model_name, messages=[
+def generate_response(prompt):
+    response: ChatResponse = chat(model=MODEL, messages=[
         {
             'role': 'user',
             'content': prompt,
@@ -133,4 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, default=OUTPUT_DATA_PATH, help="Path to the output data file")
     args = parser.parse_args()
     MODEL = args.model
+    INPUT_DATA_PATH = args.input
+    OUTPUT_DATA_PATH = args.output
     start()
+    
