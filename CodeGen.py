@@ -85,8 +85,8 @@ def requirements_save(requirements):
         file.write(requirements)
 
 def docker_run():
-    subprocess.run(["sudo", "docker", "build", "-t", "my-python-script", "."])
-    result = subprocess.run(["sudo", "docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
+    subprocess.run(["docker", "build", "-t", "my-python-script", "."])
+    result = subprocess.run(["docker", "run", "--rm", "my-python-script"], capture_output=True, text=True)
 
     return result.stdout, result.stderr
 
