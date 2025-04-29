@@ -1,6 +1,6 @@
 #Заменить на что угодно
-from ollama import chat
-from ollama import ChatResponse
+import sys
+import subprocess
 
 MODEL = "yandex/YandexGPT-5-Lite-8B-instruct-GGUF"
 
@@ -8,18 +8,29 @@ def set_model(model_name):
     global MODEL
     MODEL = model_name
 
-def generate_response(prompt):
-    response: ChatResponse = chat(model=MODEL, messages=[
-        {
-            'role': 'user',
-            'content': prompt,
-        },
-    ])
-    return response.message.content
+def generate_response(prompt: str):
+    command = ["ollama", "run", MODEL, prompt]
+
+    try:
+        print(f"Запуск команды: {' '.join(command)}", file=sys.stderr) # Вывод в stderr для отладки
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        
+        print("Команда успешно выполнена.", file=sys.stderr) # Отладка
+        response = result.stdout.strip()
+        return response
+
+    except Exception as e:
+        error_message = f"Произошла непредвиденная ошибка: {e}"
+        print(error_message, file=sys.stderr)
+        return error_message
 
 # Сама программа
 import re
-import subprocess
 import argparse
 
 INPUT_DATA_PATH = 'data.html'
